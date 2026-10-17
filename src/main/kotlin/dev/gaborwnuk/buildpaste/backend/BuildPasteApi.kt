@@ -1,13 +1,10 @@
 package dev.gaborwnuk.buildpaste.backend
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonNull
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dev.gaborwnuk.buildpaste.BuildPasteLog
 import dev.gaborwnuk.buildpaste.protocol.ApiResult
-import dev.gaborwnuk.buildpaste.protocol.BlockTable
 import dev.gaborwnuk.buildpaste.protocol.BuildData
+import dev.gaborwnuk.buildpaste.protocol.BuildJson
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -64,38 +61,10 @@ object BuildPasteApi {
 				error != null -> failure(error)
 				response.statusCode() == 404 -> ApiResult.NotFound
 				response.statusCode() != 200 -> ApiResult.Failed("HTTP ${response.statusCode()}")
-				else -> runCatching { ApiResult.Success(parseBuild(response.body())) }
+				else -> runCatching { ApiResult.Success(BuildJson.parse(response.body())) }
 					.getOrElse { ApiResult.Failed("malformed build data: ${it.message}") }
 			}
 		}
-
-	private fun parseBuild(body: String): BuildData {
-		val json = JsonParser.parseString(body).asJsonObject
-
-		val size = json.getAsJsonArray("size")
-		val blocks = json.getAsJsonArray("blocks").map { BlockTable.resolve(it.asString) }
-		val data = json.getAsJsonArray("data").map { element ->
-			if (element.isJsonNull) null else element.asString
-		}
-
-		val nbt = mutableMapOf<Int, String>()
-		if (json.has("nbt") && json.get("nbt").isJsonObject) {
-			for ((key, value) in json.getAsJsonObject("nbt").entrySet()) {
-				val index = key.toIntOrNull() ?: continue
-				if (!value.isJsonNull) nbt[index] = value.asString
-			}
-		}
-
-		return BuildData(
-			sizeX = size[0].asInt,
-			sizeY = size[1].asInt,
-			sizeZ = size[2].asInt,
-			uploadDirection = json.get("direction").asString,
-			blocks = blocks,
-			data = data,
-			nbt = nbt,
-		)
-	}
 
 	/**
 	 * Uploads a build and returns the id the backend assigns it.
@@ -112,15 +81,8 @@ object BuildPasteApi {
 		buildName: String,
 		nbt: Map<Int, String>,
 	): CompletableFuture<ApiResult<String>> {
-		val payload = JsonObject().apply {
+		val payload = BuildJson.toJson(blocks, data, size, lookDirection, nbt).apply {
 			addProperty("uuid", uuid)
-			add("blocks", blocks.toJsonArray())
-			add("data", data.toJsonArray())
-			add("size", size.toJsonArray())
-			addProperty("direction", lookDirection)
-			add("nbt", JsonObject().apply {
-				nbt.forEach { (index, value) -> addProperty(index.toString(), value) }
-			})
 		}
 
 		val suffix = if (buildName.isEmpty()) "" else encode(buildName)
@@ -220,11 +182,4 @@ object BuildPasteApi {
 			}
 		}
 
-	private fun List<*>.toJsonArray() = JsonArray().also { array ->
-		for (element in this) when (element) {
-			null -> array.add(JsonNull.INSTANCE)
-			is Number -> array.add(element)
-			else -> array.add(element.toString())
-		}
-	}
 }

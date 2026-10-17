@@ -96,6 +96,42 @@ object BuildPasteCommands {
 			}
 		)
 
+		// Local build files are read from and written to the server's disk, so only
+		// operators may touch them, whatever has been granted to everyone else.
+		dispatcher.register(
+			literal("pastefile")
+				.executes { context -> withOperator(context) { player -> BuildPasteService.listFiles(player) } }
+				.then(
+					Commands.argument("name", StringArgumentType.word())
+						.executes { context ->
+							withOperator(context) { player ->
+								BuildPasteService.pasteFile(player, StringArgumentType.getString(context, "name"), null)
+							}
+						}
+						.then(
+							literal(PasteMode.DONT_PLACE_AIR).executes { context ->
+								withOperator(context) { player ->
+									BuildPasteService.pasteFile(
+										player,
+										StringArgumentType.getString(context, "name"),
+										PasteMode.DONT_PLACE_AIR,
+									)
+								}
+							}
+						)
+				)
+		)
+
+		dispatcher.register(
+			literal("exportfile").then(
+				Commands.argument("name", StringArgumentType.word()).executes { context ->
+					withOperator(context) { player ->
+						BuildPasteService.exportFile(player, StringArgumentType.getString(context, "name"))
+					}
+				}
+			)
+		)
+
 		dispatcher.register(
 			literal("construct")
 				.executes { context ->
@@ -292,6 +328,15 @@ object BuildPasteCommands {
 		}
 		action(player)
 	}
+
+	private inline fun withOperator(context: CommandContext<CommandSourceStack>, action: (ServerPlayer) -> Unit): Int =
+		withPlayer(context) { player ->
+			if (!Permissions.isOperator(player)) {
+				player.sendSystemMessage(Messages.error("Only operators can use local build files."))
+				return@withPlayer
+			}
+			action(player)
+		}
 
 	private inline fun requireOperator(context: CommandContext<CommandSourceStack>, action: () -> Unit): Int {
 		val player = context.source.player

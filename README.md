@@ -79,6 +79,18 @@ Operator settings:
 Operators may do everything by default. Anyone else needs a grant, and grants last until
 the server restarts.
 
+Local build files, for operators only. They live in `buildpaste/builds/` in the server
+folder and use the same JSON as buildpaste.net, so nothing leaves the machine:
+
+```
+/pastefile <name>                paste buildpaste/builds/<name>.json, facing your way
+/pastefile <name> dontplaceair   the same, keeping what is already there
+/exportfile <name>               write the selected region to buildpaste/builds/<name>.json
+```
+
+`/undopaste` works for file pastes too. To turn a real building into a build file, see
+[tools/building](tools/building/README.md).
+
 ## Installing
 
 Get the jar for your loader from the
@@ -198,6 +210,9 @@ To run a development client or server:
 
 Kill any leftover server JVM before starting another one — they share the `run` folder,
 and a second server dies on the world lock or the port.
+
+The Fabric client gametest pastes a build into a fresh world, reads it back and takes
+screenshots. `tools/building` drives it (`python -m building review`); see its README.
 
 ## Credits and licences
 

@@ -25,6 +25,8 @@ dependencies {
 	implementation("thedarkcolour:kotlinforforge-neoforge:${property("deps.kotlin_forge")}")
 
 	testImplementation(kotlin("test"))
+	// The game ships Gson at runtime, but NeoForge leaves it off the unit-test classpath.
+	testImplementation("com.google.code.gson:gson:2.13.2")
 }
 
 neoForge {

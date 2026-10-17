@@ -3,6 +3,7 @@ package dev.gaborwnuk.buildpaste
 import dev.gaborwnuk.buildpaste.backend.BuildPasteApi
 import dev.gaborwnuk.buildpaste.chat.Messages
 import dev.gaborwnuk.buildpaste.item.BuildPasteItems
+import dev.gaborwnuk.buildpaste.local.LocalBuilds
 import dev.gaborwnuk.buildpaste.paste.InventoryBilling
 import dev.gaborwnuk.buildpaste.paste.PasteJob
 import dev.gaborwnuk.buildpaste.paste.PasteMode
@@ -10,6 +11,7 @@ import dev.gaborwnuk.buildpaste.paste.PasteScheduler
 import dev.gaborwnuk.buildpaste.protocol.ApiResult
 import dev.gaborwnuk.buildpaste.protocol.BlockTable
 import dev.gaborwnuk.buildpaste.protocol.BuildData
+import dev.gaborwnuk.buildpaste.protocol.BuildJson
 import dev.gaborwnuk.buildpaste.protocol.Rotation
 import dev.gaborwnuk.buildpaste.session.PlayerSession
 import dev.gaborwnuk.buildpaste.session.Sessions
@@ -298,6 +300,76 @@ object BuildPasteService {
 		PasteScheduler.submit(job)
 		player.sendSystemMessage(Messages.plain("Undoing ${job.blockCount} blocks..."))
 	}
+
+	// region local files
+
+	/**
+	 * Pastes a build from the server's local build folder, exactly as `/paste` would paste
+	 * the same build fetched from buildpaste.net.
+	 */
+	fun pasteFile(player: ServerPlayer, name: String, modifier: String?) {
+		val session = Sessions[player]
+		if (session.pasteInProgress) {
+			player.sendSystemMessage(Messages.error("A paste is already running. Wait for it to finish."))
+			return
+		}
+
+		val builds = localBuilds(player)
+		val body = builds.read(name)
+		if (body == null) {
+			player.sendSystemMessage(Messages.error("No local build named '$name' in ${builds.directory}"))
+			return
+		}
+
+		val build = runCatching { BuildJson.parse(body) }.getOrElse { error ->
+			player.sendSystemMessage(Messages.error("Local build '$name' is malformed: ${error.message}"))
+			return
+		}
+
+		startPaste(
+			player = player,
+			session = session,
+			build = build,
+			origin = player.blockPosition(),
+			direction = Rotation.lookDirection(player.yRot),
+			mode = PasteMode.fromArgument(modifier),
+			constructing = false,
+		)
+	}
+
+	/** Writes the selected region to the local build folder, in the form `/upload` would send. */
+	fun exportFile(player: ServerPlayer, name: String) {
+		val session = Sessions[player]
+		val pos1 = session.pos1
+		val pos2 = session.pos2
+		if (pos1 == null || pos2 == null || session.selectionLevel != player.level().dimension()) {
+			player.sendSystemMessage(Messages.error("Select two positions in this world first, with /pos1 and /pos2."))
+			return
+		}
+
+		val scan = scanRegion(player.level(), player, pos1, pos2)
+		if (scan == null) {
+			player.sendSystemMessage(Messages.error("That selection is too large to export."))
+			return
+		}
+
+		val json = BuildJson.toJson(scan.blocks, scan.data, scan.size, scan.lookDirection, scan.nbt)
+		val file = localBuilds(player).write(name, json.toString())
+		player.sendSystemMessage(Messages.plain("Exported ${scan.blocks.size} blocks to $file"))
+	}
+
+	fun listFiles(player: ServerPlayer) {
+		val builds = localBuilds(player)
+		val names = builds.list()
+		player.sendSystemMessage(
+			Messages.plain(
+				if (names.isEmpty()) "No local builds in ${builds.directory}"
+				else "Local builds: ${names.joinToString(", ")}"
+			)
+		)
+	}
+
+	private fun localBuilds(player: ServerPlayer) = LocalBuilds(player.gameServer.serverDirectory)
 
 	// region construct
 

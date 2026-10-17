@@ -84,3 +84,24 @@ loom {
 		runDirectory = rootProject.file("run") // Use a shared run folder and create separate worlds
 	}
 }
+
+// A development-only client game test that pastes a local build into a fresh world, reads
+// it back and photographs it. It never ships: the source set is not part of the jar.
+// Driven by tools/building (`python -m building review ...`), see that README.
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "$modId-review"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+		clearRunDirectory = true
+	}
+}
+
+tasks.matching { it.name == "runClientGameTest" }.configureEach {
+	(this as JavaExec).systemProperty(
+		"buildpaste.review.spec",
+		rootProject.file("build/review/spec.json").absolutePath,
+	)
+}

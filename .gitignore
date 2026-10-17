@@ -25,5 +25,14 @@ bin/
 .DS_Store
 Thumbs.db
 
+# Building projects are local work (often private plans); add a shareable one with git add -f
+buildings/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
 # Reference copy of the upstream Bukkit plugin, not ours to redistribute
 BuildPastePlugin-*.jar
+tools/building/.cache/

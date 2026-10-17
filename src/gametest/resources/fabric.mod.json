@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "buildpaste-review",
+  "version": "1.0.0",
+  "name": "BuildPaste review harness",
+  "description": "Development only: pastes a local build into a fresh world, reads it back and photographs it.",
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      {
+        "adapter": "kotlin",
+        "value": "dev.gaborwnuk.buildpaste.review.BuildReviewGameTest"
+      }
+    ]
+  },
+  "depends": {
+    "buildpaste": "*",
+    "fabric-client-gametest-api-v1": "*",
+    "fabric-language-kotlin": "*"
+  }
+}
