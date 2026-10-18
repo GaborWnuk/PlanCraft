@@ -1,7 +1,9 @@
-# Real buildings to BuildPaste builds
+# PlanCraft building toolchain
 
-A deterministic toolchain that turns a real building into a BuildPaste build at 1:1 scale
-(one block is one metre), checks it in a real game, and only then gets uploaded.
+A deterministic toolchain that turns a real building into a Minecraft structure at 1:1
+scale (one block is one metre), checks it in a real game, and prepares it for local
+placement or an explicitly approved upload. The current output format and placement
+backend are described in the [BuildPaste integration guide](../../docs/buildpaste.md).
 
 ```
 building.yaml + palette.yaml  ->  compile  ->  out/build.json  ->  review (real game)  ->  /pastefile, /upload
@@ -40,8 +42,9 @@ python -m building registry          # block list and preview colours for 26.1.2
 python -m pytest -q tests
 ```
 
-The in-game review also needs the Gradle build of the mod to work (Java 25; see the main
-README). It runs the Fabric client gametest, which opens a real 26.1.2 client.
+The in-game review also needs the Gradle build of the backend to work (Java 25; see
+[building from source](../../docs/buildpaste.md#building-from-source)).
+It runs the Fabric client gametest, which opens a real 26.1.2 client.
 
 ## A project
 

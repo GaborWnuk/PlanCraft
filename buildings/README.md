@@ -1,6 +1,6 @@
-# Ready-to-paste buildings
+# PlanCraft buildings
 
-These are shared examples made with the [building toolchain](../tools/building/README.md).
+These are shared examples made with the [PlanCraft toolchain](../tools/building/README.md).
 You do **not** need Python, Copilot or a buildpaste.net account to paste a supplied build
 file. You need Minecraft Java Edition and the matching BuildPaste mod installed on the
 server, or in your client for singleplayer.
@@ -12,7 +12,7 @@ server, or in your client for singleplayer.
 ## Use in your game
 
 1. Back up your world. Install **BuildPaste 2.3.1 or newer** for your exact Minecraft
-   version and loader, with its [dependencies](../README.md#dependencies). The supplied
+   version and loader, with its [dependencies](../docs/buildpaste.md#dependencies). The supplied
    Varso build was reviewed in Minecraft **26.1.2**. Other supported versions need their
    matching mod jar and a check that all block states still exist. This is not a Bedrock
    Edition schematic.
