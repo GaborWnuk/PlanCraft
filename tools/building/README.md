@@ -13,6 +13,22 @@ building.yaml + palette.yaml  ->  compile  ->  out/build.json  ->  review (real 
 Nothing is placed by hand. The whole build is described in a model, compiled in one go
 and pasted in one go, so the same inputs always give the same blocks.
 
+## Copilot-assisted workflow
+
+For the complete workflow from a building's name or plans, use these tools with an LLM
+assistant such as **GitHub Copilot in VS Code**, following the bundled
+[real-building skill](../../.github/skills/real-building/SKILL.md). Copilot researches the
+building, interprets references, writes the model, runs the tools and reviews real-game
+screenshots with you. The compiler and read-back checks are deterministic; research and
+visual interpretation still need review. Varso Tower in the
+[main README](../../README.md#real-buildings) demonstrates the result.
+
+See [Use with GitHub Copilot](../../README.md#use-with-github-copilot) for setup, the required
+skills and an example request. Use the
+[deploy-build-to-server skill](../../.github/skills/deploy-build-to-server/SKILL.md) when an
+approved build is ready for an existing world. The CLI below can also be used directly
+with a manually authored model; an LLM is not a runtime dependency of the compiler or mod.
+
 ## Setup
 
 Python 3.11 or newer:

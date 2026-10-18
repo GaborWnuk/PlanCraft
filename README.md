@@ -4,6 +4,12 @@
 
 Real buildings in Minecraft at 1:1 scale, one block to a metre, pasted in one go.
 
+Use the toolchain with an LLM assistant such as **GitHub Copilot in VS Code** to turn a
+building's name, public references or your own plans into a highly detailed Minecraft
+recreation. Copilot follows the bundled skills to research and model the building, run the
+deterministic tools and inspect the result in a real game. Varso Tower below is an example
+of this workflow.
+
 The repository has two parts:
 
 - **[A real-building toolchain](tools/building/README.md)**, in Python. It describes a
@@ -47,6 +53,47 @@ resized thumbnail; no further edits). Minecraft screenshot: actual in-game revie
 to remove excess sky; the complete building is preserved. The views show different sides.
 
 Plans of private homes stay private: projects live in `buildings/`, which git ignores.
+
+### Use with GitHub Copilot
+
+The intended end-to-end workflow pairs **Copilot's research, modelling and visual review**
+with **deterministic compilation, placement and read-back checks**. The command-line tools
+do not find or interpret a building by name on their own; the LLM uses the skills to turn
+references into the model that those tools compile. You can also author the model manually.
+
+1. Open this repository in VS Code with GitHub Copilot Chat in **Agent mode**.
+   Follow the [toolchain setup](tools/building/README.md#setup): Python 3.11+, its listed
+   dependencies, and Java 25 for the real Minecraft review client. Allow the workflow to
+   access public sources, run local commands and inspect screenshots when prompted.
+2. Use the repository's bundled skills (no additional skill pack is required):
+
+   | Skill | When to use it |
+   | --- | --- |
+   | [real-building](.github/skills/real-building/SKILL.md) | Required for the building workflow: research, source measurements, YAML model and materials, compile, real-game review, refinement and approval. |
+   | [deploy-build-to-server](.github/skills/deploy-build-to-server/SKILL.md) | When putting an approved build into an existing world: check versions and height, rehearse on a copy, and prepare the files and paste commands. |
+
+   Ask Copilot explicitly to use the skill by name. If it is not discovered automatically,
+   attach the linked `SKILL.md` to the chat and ask Copilot to follow it.
+3. Start with a request such as:
+
+   > Use the real-building skill to recreate Varso Tower in Warsaw at 1:1 scale.
+   > Research public plans, dimensions, materials and interior references. Prepare the
+   > complete model, compile it and paste it in one go into a fresh real Minecraft world.
+   > Compare the read-back and screenshots with the references, then refine it.
+   > Do not upload it or modify my existing worlds until I approve.
+
+4. Review the result with Copilot: measurements and source assumptions, validation,
+   cell-by-cell read-back, exterior and interior screenshots, and optionally a playable
+   walkthrough world. Refine the model and recompile rather than editing blocks by hand.
+   High detail is constrained by available references and Minecraft's block grid; unknown
+   interiors and simplified features must be identified, not presented as exact copies.
+5. After approval, ask Copilot to use `deploy-build-to-server` for a local paste, or
+   explicitly approve a buildpaste.net upload. Local pasting needs no website upload.
+   Existing worlds are backed up and rehearsed on a copy before deployment.
+
+Private plans require a separate decision about sharing them with your chosen LLM service;
+gitignored files are not automatically private from tools given access to them. Never publish
+private plans or derived builds without explicit permission.
 
 ## Mod commands
 
