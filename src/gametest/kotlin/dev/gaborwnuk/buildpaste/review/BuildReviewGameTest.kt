@@ -58,11 +58,18 @@ class BuildReviewGameTest : FabricClientGameTest {
 		val size = build.getAsJsonArray("size").map { it.asInt }
 
 		context.runOnClient<RuntimeException> { minecraft ->
-			minecraft.options.hideGui = true
+			setGuiHidden(minecraft, true)
 			minecraft.options.renderDistance().set(spec.get("renderDistance")?.asInt ?: 10)
 		}
 
-		context.worldBuilder().create().use { world ->
+		val builder = context.worldBuilder()
+		if (spec.get("walkthrough")?.asBoolean == true) {
+			builder.adjustSettings { settings ->
+				settings.setAllowCommands(true)
+				settings.setName("BuildPaste Walkthrough")
+			}
+		}
+		builder.create().use { world ->
 			val server = world.server
 			waitForView(context, "world start")
 
@@ -80,14 +87,36 @@ class BuildReviewGameTest : FabricClientGameTest {
 			readBack(world, placement, out)
 			val shots = screenshots(context, world, spec, placement, out)
 
+			if (spec.get("walkthrough")?.asBoolean == true) {
+				val x = placement.min.x + placement.sizeX / 2
+				val y = placement.origin.y + (spec.get("groundLayer")?.asInt ?: 0) + 1
+				val z = placement.max.z + 4
+				server.runCommand("defaultgamemode adventure")
+				server.runCommand("gamemode adventure @a")
+				server.runCommand("setworldspawn $x $y $z")
+				server.runCommand("spawnpoint @a $x $y $z")
+				server.runCommand("tp @a $x $y $z 180 0")
+				context.runOnClient<RuntimeException> { minecraft -> setGuiHidden(minecraft, false) }
+			}
+
 			val report = JsonObject().apply {
 				add("origin", JsonArray().apply { listOf(placement.origin.x, placement.origin.y, placement.origin.z).forEach(::add) })
 				add("min", JsonArray().apply { listOf(placement.min.x, placement.min.y, placement.min.z).forEach(::add) })
+				add("max", JsonArray().apply { listOf(placement.max.x, placement.max.y, placement.max.z).forEach(::add) })
+				addProperty("world", world.worldSave.saveDirectory.toAbsolutePath().toString())
 				addProperty("pasteMillis", pasteMillis)
 				add("shots", shots)
 			}
 			Files.writeString(out.resolve("report.json"), report.toString())
 		}
+	}
+
+	private fun setGuiHidden(minecraft: Minecraft, hidden: Boolean) {
+		//? if >=26.2 {
+		/*if (minecraft.gui.hud.isHidden != hidden) minecraft.gui.hud.toggle()
+		*///? } else {
+		minecraft.options.hideGui = hidden
+		//? }
 	}
 
 	/** Puts the build's ground layer on the surface of the test world, wherever that is. */

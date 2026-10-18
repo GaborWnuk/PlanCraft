@@ -47,6 +47,15 @@ def cmd_diff(args) -> int:
     return 0 if result["ok"] else 1
 
 
+def cmd_walkthrough(args) -> int:
+    from . import project, walkthrough
+
+    proj = project.load(Path(args.project))
+    _print(walkthrough.prepare(proj.build_file, Path(args.game_dir), proj.slug,
+                               proj.ground_layer, args.target, args.white_panels))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     from . import project  # noqa: F401  (registers project commands)
 
@@ -70,6 +79,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-exterior", action="store_true", help="skip the automatic exterior views")
     p.add_argument("--target", default=review.DEFAULT_TARGET)
     p.set_defaults(func=cmd_review)
+
+    p = sub.add_parser("walkthrough", help="verify and copy a playable world into a new game directory")
+    p.add_argument("--project", required=True)
+    p.add_argument("--game-dir", required=True, help="new, isolated instance's minecraft folder")
+    p.add_argument("--target", default=review.DEFAULT_TARGET)
+    p.add_argument("--white-panels", action="store_true", help="add an optional smooth-white panel resource pack")
+    p.set_defaults(func=cmd_walkthrough)
 
     p = sub.add_parser("diff", help="compare two build JSON files cell by cell")
     p.add_argument("expected")

@@ -76,6 +76,7 @@ def run(
     time_of_day: int = 6000,
     width: int = 1920,
     height: int = 1080,
+    walkthrough: bool = False,
 ) -> dict:
     expected = buildpaste.read(build_file)
     out = REVIEW_DIR / name
@@ -93,6 +94,7 @@ def run(
         "width": width,
         "height": height,
         "shots": shots,
+        "walkthrough": walkthrough,
     }
     REVIEW_DIR.mkdir(parents=True, exist_ok=True)
     (REVIEW_DIR / "spec.json").write_text(json.dumps(spec, indent=2), encoding="utf-8")

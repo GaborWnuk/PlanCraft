@@ -151,3 +151,34 @@ and the screenshots match the photos and visualisations.
 Copy `out/build.json` to `buildpaste/builds/<name>.json` in a server folder and run
 `/pastefile <name>` as an operator; `/undopaste` takes it away again. Upload to
 buildpaste.net with `/upload` only once the build has been approved.
+
+## Walk around the model
+
+```sh
+python -m building walkthrough --project <project> --game-dir <new-instance-minecraft-folder> --white-panels
+```
+
+This runs a new read-back review, then copies the saved world and the compiled local build
+into a **new** game directory. Existing game directories are rejected. Install the matching
+BuildPaste mod and its dependencies in that isolated instance, then open its singleplayer
+world from your normal launcher. Walkthrough reports use `build/review/<slug>-walkthrough/`
+so the normal review's screenshots are preserved. The world starts in adventure mode outside
+the building:
+walk without accidentally breaking anything, or use `/gamemode spectator` to fly through walls.
+Use `/gamemode adventure` to return to collision-aware inspection.
+
+The optional `--white-panels` resource pack replaces pale oak trapdoor model textures with
+a generated, uniform near-white texture (RGB 242, 242, 242). Enable it in Options > Resource
+Packs; disable it to compare with the vanilla appearance. It preserves panel thickness and
+collision and includes no copied
+game textures. It affects **all** pale oak trapdoors in that client. There is no vanilla
+opaque, unpatterned white vertical half-slab: white concrete is a full block, iron trapdoors
+have holes, and white stained-glass panes are translucent.
+
+**A resource pack does not travel with a BuildPaste upload.** Other players see vanilla
+trapdoors unless they enable the same pack. The generated `walkthrough.json` records the
+exact selection corners and copied build path. Account linking and upload are separate:
+launch with your own Minecraft account, sign into the intended buildpaste.net account,
+follow `/connectaccounts`, then select the recorded corners with `/pos1` and `/pos2`.
+Do not run `/upload` until the model and its vanilla-versus-resource-pack appearance have
+been explicitly approved.
