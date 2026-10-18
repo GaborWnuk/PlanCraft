@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext
 import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions
 import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.SectionOcclusionGraph
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.chunk.status.ChunkStatus
@@ -60,6 +61,9 @@ class BuildReviewGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> { minecraft ->
 			setGuiHidden(minecraft, true)
 			minecraft.options.renderDistance().set(spec.get("renderDistance")?.asInt ?: 10)
+			// Occlusion culling treats chunks the client has not received as opaque, which hides a
+			// build from a distant camera whose line of sight crosses them; frustum culling stays on.
+			minecraft.smartCull = false
 		}
 
 		val builder = context.worldBuilder()
@@ -86,6 +90,7 @@ class BuildReviewGameTest : FabricClientGameTest {
 			val pasteMillis = paste(context, world, build, placement)
 			readBack(world, placement, out)
 			val shots = screenshots(context, world, spec, placement, out)
+			server.runCommand("forceload remove all")
 
 			if (spec.get("walkthrough")?.asBoolean == true) {
 				val x = placement.min.x + placement.sizeX / 2
@@ -96,7 +101,10 @@ class BuildReviewGameTest : FabricClientGameTest {
 				server.runCommand("setworldspawn $x $y $z")
 				server.runCommand("spawnpoint @a $x $y $z")
 				server.runCommand("tp @a $x $y $z 180 0")
-				context.runOnClient<RuntimeException> { minecraft -> setGuiHidden(minecraft, false) }
+				context.runOnClient<RuntimeException> { minecraft ->
+					minecraft.smartCull = true
+					setGuiHidden(minecraft, false)
+				}
 			}
 
 			val report = JsonObject().apply {
@@ -118,6 +126,20 @@ class BuildReviewGameTest : FabricClientGameTest {
 		minecraft.options.hideGui = hidden
 		//? }
 	}
+
+	private fun occlusionGraph(minecraft: Minecraft): SectionOcclusionGraph =
+		//? if >=26.2 {
+		/*minecraft.levelRenderer.sectionOcclusionGraph()
+		*///? } else {
+		minecraft.levelRenderer.getSectionOcclusionGraph()
+		//? }
+
+	private fun visibleSections(minecraft: Minecraft): Int =
+		//? if >=26.2 {
+		/*minecraft.levelRenderer.visibleSections().size
+		*///? } else {
+		minecraft.levelRenderer.getVisibleSections().size
+		//? }
 
 	/** Puts the build's ground layer on the surface of the test world, wherever that is. */
 	private fun placement(world: TestSingleplayerContext, spec: JsonObject, size: List<Int>): Placement {
@@ -181,9 +203,15 @@ class BuildReviewGameTest : FabricClientGameTest {
 			val yaw = shot.get("yaw").asFloat
 			val pitch = shot.get("pitch").asFloat
 
+			preload(context, world, name, x, z)
 			world.server.runCommand("tp @a $x $y $z $yaw $pitch")
 			context.waitTicks(3)
-			waitForView(context, name)
+			waitForView(context, name, placement)
+			// The section graph is built from the camera's chunk; after a long jump it is often built
+			// before that chunk arrives and then stays empty, so rebuild it now that chunks are in.
+			context.runOnClient<RuntimeException> { minecraft -> occlusionGraph(minecraft).invalidate() }
+			context.waitTicks(3)
+			waitForView(context, name, placement)
 			context.waitTicks(shot.get("settleTicks")?.asInt ?: 10)
 
 			val file = context.takeScreenshot(
@@ -199,22 +227,48 @@ class BuildReviewGameTest : FabricClientGameTest {
 	}
 
 	/**
-	 * Waits until the chunks around the camera are loaded and every visible section is drawn.
+	 * Loads the chunks round a camera before the player is sent there.
+	 *
+	 * A player teleported into unloaded chunks makes the server thread load them synchronously,
+	 * which can stall for good under the game test's lockstep ticking. Force-loading them first
+	 * lets the normal chunk pipeline do the work while the test waits.
+	 */
+	private fun preload(context: ClientGameTestContext, world: TestSingleplayerContext, label: String, x: Double, z: Double) {
+		val cx = Math.floorDiv(Math.floor(x).toInt(), 16)
+		val cz = Math.floorDiv(Math.floor(z).toInt(), 16)
+		world.server.runCommand("forceload add ${(cx - 1) * 16} ${(cz - 1) * 16} ${(cx + 1) * 16} ${(cz + 1) * 16}")
+		val ready = {
+			world.server.computeOnServer<Boolean, RuntimeException> { server ->
+				val chunks = server.overworld().chunkSource
+				(-1..1).all { dx -> (-1..1).all { dz -> chunks.hasChunk(cx + dx, cz + dz) } }
+			}
+		}
+		var ticks = 0
+		while (!ready() && ticks < PRELOAD_TIMEOUT_TICKS) {
+			context.waitTicks(1)
+			ticks++
+		}
+		if (ticks >= PRELOAD_TIMEOUT_TICKS) log.warn("Chunks round {} still loading after {} ticks", label, ticks)
+	}
+
+	/**
+	 * Waits until the chunks around the camera and under the build are loaded and every visible
+	 * section is drawn, so a distant camera never photographs fog before the build arrives.
 	 *
 	 * Fabric's own `waitForChunksRender` demands every chunk in render distance and fails the
 	 * whole run when that never settles, so this checks a smaller radius and only warns on timeout.
 	 */
-	private fun waitForView(context: ClientGameTestContext, label: String) {
+	private fun waitForView(context: ClientGameTestContext, label: String, placement: Placement? = null) {
 		val started = System.nanoTime()
 		try {
-			context.waitFor({ minecraft -> viewReady(minecraft) }, RENDER_TIMEOUT_TICKS)
+			context.waitFor({ minecraft -> viewReady(minecraft, placement) }, RENDER_TIMEOUT_TICKS)
 			log.info("View ready for {} after {} ms", label, (System.nanoTime() - started) / 1_000_000)
 		} catch (timeout: AssertionError) {
 			log.warn("View for {} still incomplete after {} ms; taking it anyway", label, (System.nanoTime() - started) / 1_000_000)
 		}
 	}
 
-	private fun viewReady(minecraft: Minecraft): Boolean {
+	private fun viewReady(minecraft: Minecraft, placement: Placement?): Boolean {
 		val level = minecraft.level ?: return false
 		val camera = minecraft.player?.chunkPosition() ?: return false
 		for (dx in -VIEW_RADIUS_CHUNKS..VIEW_RADIUS_CHUNKS) {
@@ -222,8 +276,32 @@ class BuildReviewGameTest : FabricClientGameTest {
 				if (level.getChunk(camera.x + dx, camera.z + dz, ChunkStatus.FULL, false) == null) return false
 			}
 		}
-		return minecraft.levelRenderer.hasRenderedAllSections()
+		if (placement != null) {
+			for (cx in (placement.min.x shr 4)..(placement.max.x shr 4)) {
+				for (cz in (placement.min.z shr 4)..(placement.max.z shr 4)) {
+					if (level.getChunk(cx, cz, ChunkStatus.FULL, false) == null) return false
+				}
+			}
+		}
+		if (!minecraft.levelRenderer.hasRenderedAllSections()) return false
+		if (placement != null && visibleSections(minecraft) == 0) return false
+		// Right after a long teleport the compile queue is empty simply because nothing near the
+		// new view has been scheduled yet, so an outside camera also waits for the build itself.
+		if (placement != null && !inside(placement, minecraft.player!!.blockPosition())) {
+			val x = (placement.min.x + placement.max.x) / 2
+			val z = (placement.min.z + placement.max.z) / 2
+			for (step in 0..BUILD_SAMPLES) {
+				val y = placement.min.y + (placement.max.y - placement.min.y) * step / BUILD_SAMPLES
+				if (!minecraft.levelRenderer.isSectionCompiledAndVisible(BlockPos(x, y, z))) return false
+			}
+		}
+		return true
 	}
+
+	private fun inside(placement: Placement, pos: BlockPos) =
+		pos.x in placement.min.x..placement.max.x &&
+			pos.y in placement.min.y..placement.max.y &&
+			pos.z in placement.min.z..placement.max.z
 
 	private fun onlyPlayer(server: MinecraftServer) = server.playerList.players.single()
 
@@ -235,6 +313,8 @@ class BuildReviewGameTest : FabricClientGameTest {
 		const val NORTH_YAW = 180f
 
 		const val RENDER_TIMEOUT_TICKS = 20 * 60
+		const val PRELOAD_TIMEOUT_TICKS = 20 * 30
 		const val VIEW_RADIUS_CHUNKS = 4
+		const val BUILD_SAMPLES = 4
 	}
 }

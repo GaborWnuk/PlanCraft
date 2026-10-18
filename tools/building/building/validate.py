@@ -33,8 +33,8 @@ _NO_COLLISION = (
     "_sapling",
     "tripwire",
     "redstone_wire",
-    "light",
 )
+_NO_COLLISION_EXACT = {"minecraft:light"}  # the invisible light block, not light_gray_* or light_blue_*
 _STEP = ("_stairs", "_slab")
 
 
@@ -42,7 +42,7 @@ def _open(state: str) -> bool:
     if state == AIR:
         return True
     name = split_state(state)[0]
-    return any(token in name for token in _NO_COLLISION)
+    return name in _NO_COLLISION_EXACT or any(token in name for token in _NO_COLLISION)
 
 
 def _step(state: str) -> bool:

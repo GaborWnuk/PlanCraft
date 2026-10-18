@@ -76,6 +76,9 @@ Quality bar, all required:
 - `diff.mismatch_count` is 0 and the compile has 0 warnings.
 - Every room is reachable (validation passes).
 - Screenshots match the photos side by side: massing, roof, window rhythm, materials.
+  Look at every shot: a blank or fog-only elevation is a harness or camera problem
+  (check `gradle.log` for "still incomplete"), not proof that the build is fine.
+- Interior cameras point at the space they are named after, not into a core wall or a hedge.
 - Interiors have no gaps, no clipped walls and sensible ceilings.
 
 Iterate on the YAML, not on the world, until the bar is met. Report the remaining trade-offs

@@ -52,6 +52,7 @@ python -m building review --project buildings/warsaw-tower
 | Type | Meaning |
 | --- | --- |
 | `slab`, `box` | a polygon between two elevations (foundations, floors, chimneys) |
+| `cells` | explicit plan points, each filling the cell that holds it between two elevations (rasterised patterns from a generator) |
 | `wall` | a path with `thickness`, `bottom`, `top`, `outside: left/right`, `openings` |
 | `room` | clears the air of a room and lays its `finish`; checked for reachability |
 | `clear` | carves air (stair wells, double-height spaces) |
@@ -143,9 +144,15 @@ four three-quarter views, a plan view and every room. Results land in
 * `shots/`: the screenshots;
 * `gradle.log`: the full game log.
 
-Render distance is chosen from the camera positions and build bounds (at least 10 chunks).
+Render distance is chosen from the camera positions and build bounds (at least 10 chunks),
+with a margin so distance fog does not hide the far side of the build.
 Tall buildings need more distant cameras; views requiring more than 32 chunks are rejected
 instead of silently photographing unloaded parts of the build.
+
+Before each shot the harness force-loads the chunks round the camera (teleporting into
+unloaded chunks can stall the lockstep test server), rebuilds the renderer's section graph
+after the jump, and waits until sections of the build itself are compiled. Occlusion culling
+is off during the shots and back on for the walkthrough.
 
 A build is ready only when the diff is empty, `compile` has no warnings that matter,
 and the screenshots match the photos and visualisations.

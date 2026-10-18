@@ -66,6 +66,9 @@ def gradlew() -> list[str]:
     return [str(script)]
 
 
+FOG_MARGIN = 1.15
+
+
 def render_distance(size: tuple[int, int, int], shots: list[dict]) -> int:
     """Keep the whole build loaded, including when a tall building needs a distant camera."""
     sx, _, sz = size
@@ -74,7 +77,8 @@ def render_distance(size: tuple[int, int, int], shots: list[dict]) -> int:
              abs(s["pos"][2]), abs(s["pos"][2] - sz)) for s in shots),
         default=0,
     )
-    chunks = max(10, math.ceil(reach / 16) + 1)
+    # Distance fog fades the last tenth or so of the render distance, so keep a margin past it.
+    chunks = max(10, math.ceil(reach * FOG_MARGIN / 16) + 1)
     if chunks > 32:
         raise ValueError(f"review cameras need {chunks} chunks of render distance; move them closer (maximum 32)")
     return chunks

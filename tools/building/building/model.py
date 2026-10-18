@@ -25,7 +25,8 @@ Quantisation (``quantize``):
   grows by a fraction of a block per span instead of rooms clipping into each other.
 * ``round``: one uniform grid, every boundary rounded on its own.
 
-A cell belongs to a footprint when its centre (in centimetres) lies inside it. Interior
+A cell belongs to a footprint when its centre (in centimetres) lies inside it. A ``cells``
+part instead lists plan points and fills exactly the cells holding them. Interior
 partitions no thicker than ``thin_wall`` become thin panels (open trapdoors) on the
 block edge they stand on and take no cell; exterior walls thinner than ``glazed_below``
 are glazing, with frame pillars at corners and between openings.
@@ -363,7 +364,7 @@ class Model:
     def _points(self) -> list[Point]:
         pts: list[Point] = []
         for part in self.parts:
-            for key in ("polygon", "path"):
+            for key in ("polygon", "path", "cells"):
                 if key in part:
                     pts.extend((float(p[0]), float(p[1])) for p in part[key])
             if "at" in part and isinstance(part["at"], (list, tuple)) and len(part["at"]) >= 2:
@@ -1147,6 +1148,18 @@ class Model:
         for i in range(count):
             for h in range(height):
                 g.set(x + dx * i, y + h, z + dz * i, state)
+
+    def _part_cells(self, out: Compiled, part: dict) -> None:
+        """Explicit cells: each plan point in ``cells`` marks the cell holding it, filled from
+        ``bottom`` to ``top``. Generators use it to paint rasterised patterns in one part."""
+        f, g = out.frame, out.grid
+        mask = np.zeros((g.size_x, g.size_z), dtype=bool)
+        for px, pz in part["cells"]:
+            x, z = f.cell_of(float(px), float(pz))
+            if 0 <= x < g.size_x and 0 <= z < g.size_z:
+                mask[x, z] = True
+        layers = f.layers(self.elevation(part["bottom"]), self.elevation(part["top"]))
+        self._fill_columns(out, mask, layers, self.material(part.get("material")))
 
     def _part_bed(self, out: Compiled, part: dict) -> None:
         """A bed whose head is at ``at``, with the sleeper's head towards ``facing``."""

@@ -164,6 +164,16 @@ def test_thin_box_never_vanishes():
     assert any(name(s) == "minecraft:spruce_planks" for _, _, _, s in out.grid.non_air())
 
 
+def test_cells_part_paints_exactly_the_listed_cells():
+    cells = {"type": "cells", "material": "wood", "cells": [[150, 250], [450, 650], [150, 650]],
+             "bottom": 100, "top": 200, "priority": 70}
+    out = compile_(house(cells, quantize="round"))
+    f, g = out.frame, out.grid
+    painted = {(x, y, z) for x, y, z, s in g.non_air() if name(s) == "minecraft:spruce_planks"}
+    expected = {(f.cell_of(px, pz)[0], f.cy(100), f.cell_of(px, pz)[1]) for px, pz in cells["cells"]}
+    assert painted == expected
+
+
 # ---------------------------------------------------------------- stairs and roofs
 
 
@@ -199,6 +209,18 @@ def test_open_trapdoor_blocks_the_edge_opposite_its_facing():
     g.set(1, 1, 1, "minecraft:oak_trapdoor[facing=east,half=bottom,open=true]")
     edges = validate._panel_edges(g)
     assert list(edges.values()) == [(-1, 0)]
+
+
+def test_only_the_light_block_itself_is_walk_through():
+    assert validate._open("minecraft:light[level=15]")
+    assert not validate._open("minecraft:light_gray_concrete")
+    assert not validate._open("minecraft:light_blue_stained_glass")
+    g = Grid(7, 4, 7)
+    g.fill(0, 0, 0, 6, 0, 6, "minecraft:stone")
+    g.fill(1, 1, 1, 5, 3, 5, "minecraft:light_gray_concrete")
+    g.fill(2, 1, 2, 4, 3, 4, None)
+    reach = validate.reachable(g, 1)
+    assert reach[0, 1, 0] and not reach[3, 1, 3]
 
 
 def test_build_json_round_trip(tmp_path):
