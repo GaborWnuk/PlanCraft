@@ -95,7 +95,10 @@ class BuildReviewGameTest : FabricClientGameTest {
 			if (spec.get("walkthrough")?.asBoolean == true) {
 				val x = placement.min.x + placement.sizeX / 2
 				val y = placement.origin.y + (spec.get("groundLayer")?.asInt ?: 0) + 1
-				val z = placement.max.z + 4
+				val z = placement.max.z + WALKTHROUGH_SPAWN_GAP
+				// Survival-like modes otherwise spawn at a random spot up to 10 blocks away, which
+				// can be inside the build.
+				server.runCommand("gamerule respawn_radius 0")
 				server.runCommand("defaultgamemode adventure")
 				server.runCommand("gamemode adventure @a")
 				server.runCommand("setworldspawn $x $y $z")
@@ -316,5 +319,6 @@ class BuildReviewGameTest : FabricClientGameTest {
 		const val PRELOAD_TIMEOUT_TICKS = 20 * 30
 		const val VIEW_RADIUS_CHUNKS = 4
 		const val BUILD_SAMPLES = 4
+		const val WALKTHROUGH_SPAWN_GAP = 12
 	}
 }
