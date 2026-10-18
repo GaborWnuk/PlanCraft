@@ -56,6 +56,62 @@ def cmd_walkthrough(args) -> int:
     return 0
 
 
+def _build_doc(args) -> dict:
+    if args.project:
+        from . import project
+
+        path = project.load(Path(args.project)).build_file
+    else:
+        path = Path(args.build)
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def cmd_sections(args) -> int:
+    from datetime import datetime
+
+    from . import publish
+
+    plan = publish.plan_sections(_build_doc(args), args.limit)
+    if args.origin:
+        publish.add_selections(plan, args.origin)
+    if args.title:
+        stamp = args.stamp or datetime.now().strftime("%Y-%m-%d %H:%M")
+        count = len(plan["sections"])
+        for s in plan["sections"]:
+            s["name"] = publish.upload_name(args.title, s["part"], count, stamp)
+    _print(plan)
+    return 0
+
+
+def cmd_verify_upload(args) -> int:
+    from . import publish
+
+    result = publish.verify_upload(_build_doc(args), publish.fetch_build(args.id), args.layers)
+    _print(result)
+    return 0 if result["ok"] else 1
+
+
+def cmd_fit(args) -> int:
+    from . import publish
+
+    result = publish.fit(_build_doc(args), args.origin_y, args.top)
+    _print(result)
+    return 0 if result["fits"] else 1
+
+
+def cmd_height_pack(args) -> int:
+    from . import publish
+
+    print(publish.height_pack(Path(args.out), args.top, args.version, args.name))
+    return 0
+
+
+def _add_build_source(p) -> None:
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--project", help="building project folder (uses out/build.json)")
+    group.add_argument("--build", help="a build JSON file")
+
+
 def main(argv: list[str] | None = None) -> int:
     from . import project  # noqa: F401  (registers project commands)
 
@@ -91,6 +147,37 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("expected")
     p.add_argument("actual")
     p.set_defaults(func=cmd_diff)
+
+    from . import publish
+
+    p = sub.add_parser("sections", help="split a build into lossless uploads under the size limit")
+    _add_build_source(p)
+    p.add_argument("--limit", type=int, default=publish.DEFAULT_LIMIT, help="payload bytes per upload")
+    p.add_argument("--origin", type=int, nargs=3, metavar=("X", "Y", "Z"),
+                   help="where the build was pasted (player feet, facing north); adds world selections")
+    p.add_argument("--title", help="upload title; adds timestamped part names")
+    p.add_argument("--stamp", help="timestamp for the names (default: now, YYYY-MM-DD HH:MM)")
+    p.set_defaults(func=cmd_sections)
+
+    p = sub.add_parser("verify-upload", help="fetch an uploaded build and compare it with the local one")
+    _add_build_source(p)
+    p.add_argument("--id", required=True, help="buildpaste.net build id")
+    p.add_argument("--layers", type=int, nargs=2, metavar=("FIRST", "LAST"),
+                   help="layer range the upload covers (default: the whole tight build)")
+    p.set_defaults(func=cmd_verify_upload)
+
+    p = sub.add_parser("fit", help="check that a paste from a given height stays inside the world")
+    _add_build_source(p)
+    p.add_argument("--origin-y", type=int, required=True, help="y of the player's feet when pasting")
+    p.add_argument("--top", type=int, default=publish.DEFAULT_TOP, help="highest buildable y (default 319)")
+    p.set_defaults(func=cmd_fit)
+
+    p = sub.add_parser("height-pack", help="write a datapack that raises the overworld build limit")
+    p.add_argument("--out", required=True, help="folder to write the datapack folder into")
+    p.add_argument("--top", type=int, required=True, help="highest y that must be buildable")
+    p.add_argument("--version", default=registry.DEFAULT_VERSION)
+    p.add_argument("--name", default="tall-overworld")
+    p.set_defaults(func=cmd_height_pack)
 
     project.add_commands(sub)
     from . import pdfplan

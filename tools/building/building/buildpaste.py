@@ -86,13 +86,16 @@ def write(grid: Grid, path: Path) -> Path:
 
 
 def read(path: Path) -> Grid:
-    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    return from_json(json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+def from_json(doc: dict) -> Grid:
     if doc.get("direction") != DIRECTION:
         raise ValueError(f"only builds stored facing {DIRECTION} can be read, got {doc.get('direction')}")
     sx, sy, sz = doc["size"]
     grid = Grid(sx, sy, sz)
     flat = np.zeros(sx * sy * sz, dtype=np.uint16)
-    for i, (block, props) in enumerate(zip(doc["blocks"], doc["data"])):
+    for i, (block, props) in enumerate(zip(doc["blocks"], doc.get("data") or [None] * len(doc["blocks"]))):
         name = resolve_block(block)
         if not name.startswith("minecraft:") and ":" not in name:
             name = "minecraft:" + name

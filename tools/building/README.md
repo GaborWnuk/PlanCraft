@@ -159,9 +159,48 @@ and the screenshots match the photos and visualisations.
 
 ## Into a server
 
-Copy `out/build.json` to `buildpaste/builds/<name>.json` in a server folder and run
-`/pastefile <name>` as an operator; `/undopaste` takes it away again. Upload to
-buildpaste.net with `/upload` only once the build has been approved.
+Copy `out/build.json` to `buildpaste/builds/<name>.json` in the server's root folder (next
+to `mods`, not inside the world) and run `/pastefile <name>` as an operator with mod 2.3.1
+or newer; `/undopaste` takes it away again. The paste starts one block east of the player's
+feet and grows north, in the direction the player faces.
+
+Check the height before pasting. The default Overworld ends at y 319 and blocks above it
+are dropped:
+
+```sh
+python -m building fit --project buildings/<slug> --origin-y 64
+# fits, clipped_above, max_origin_y (highest feet y that still fits), top_needed
+python -m building height-pack --out build/ --top 447
+```
+
+`height-pack` writes a datapack, generated from the game's own Overworld dimension type,
+that keeps the bottom at y -64 and raises the top to at least `--top` (rounded up to a
+multiple of 16). Copy it into the world's `datapacks` folder and restart the server
+(`/reload` is not enough). Existing chunks load unchanged; singleplayer worlds show a
+one-off "experimental settings" warning. Mods that set world height (Tectonic's
+`increased_height`, for example) may override it, so test on a copy of the world first.
+
+### Uploading to buildpaste.net
+
+Upload only once the build has been approved. Payloads of about 16 MB fail on the server
+with HTTP 500; 8.5 MB works. Split big builds into stacked, lossless sections:
+
+```sh
+python -m building sections --project buildings/<slug> --origin X Y Z --title "Varso Tower Warsaw"
+```
+
+Each section lists its layer range, estimated payload, `pos1`/`pos2` world corners for a
+build pasted from feet position `X Y Z`, and a name with a timestamp (the site shows no
+upload dates). Paste the build, select each section with `/pos1` and `/pos2`, face north
+and `/upload <name>`. The id comes back in chat through [Publish]; then check it:
+
+```sh
+python -m building verify-upload --project buildings/<slug> --id <id> --layers 0 150
+```
+
+That downloads the upload and compares it cell by cell with the same layers of the local
+build. Default properties the game adds on read-back (`waterlogged=false` and the like) are
+accepted; any other difference fails.
 
 ## Walk around the model
 
