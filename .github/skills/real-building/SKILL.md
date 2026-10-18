@@ -84,8 +84,31 @@ Quality bar, all required:
 Iterate on the YAML, not on the world, until the bar is met. Report the remaining trade-offs
 (scale growth from the ceil warp, uncertain interpretations of the sources) to the user.
 
-## 5. Publish
+## 5. Walk around (optional)
 
-Only after the user explicitly approves the result: paste the compiled `out/build.json` with
-`/pastefile` or upload it to buildpaste.net. Never upload private buildings unless the user asks
-for that specific build.
+```
+python -m building walkthrough --project <project> --game-dir <new-instance-minecraft-folder>
+```
+
+Copies a freshly verified world into a **new** game directory for the user to walk through.
+Never install into, launch or modify the user's own launcher instances unless they ask for
+that specific change; prefer a dedicated instance.
+
+## 6. Publish
+
+Only after the user explicitly approves the result. Never upload private buildings unless the
+user asks for that specific build. Commands and details: "Into a server" in the toolchain README.
+
+- **Local paste**: the compiled `out/build.json` goes to `<server or game root>/buildpaste/builds/<name>.json`;
+  `/pastefile <name>` needs mod 2.3.1+ and operator rights, and starts at the player's feet
+  facing north. Run `python -m building fit --project <project> --origin-y <feet y>` first; if
+  `fits` is false, paste from `max_origin_y` or lower, or raise the world's top with
+  `height-pack` (server restart required). For an existing server world, follow the
+  [deploy-build-to-server](../deploy-build-to-server/SKILL.md) skill.
+- **buildpaste.net upload**: run `sections` first. Uploads of about 16 MB fail with HTTP 500,
+  so tall builds go up as stacked, lossless layer sections in the tight box. Every name
+  carries a timestamp (the site shows no dates), for example
+  "Varso Tower Warsaw 2026-10-18 09:32 part 1 of 2". Paste the build in a review world,
+  select each section's `pos1`/`pos2`, face north, `/upload <name>`, take the id from
+  [Publish], then `verify-upload --id <id> --layers <first> <last>` must report
+  `mismatch_count` 0. Report every id, name and description to the user.

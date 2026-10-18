@@ -2,32 +2,44 @@
 
 # BuildPaste (Fabric, NeoForge, Server)
 
-Paste builds from [buildpaste.net](https://buildpaste.net) straight into your world.
-Select two corners, upload what you built, and paste any build back in — turned to
-face whichever way you are looking.
+Real buildings in Minecraft at 1:1 scale, one block to a metre, pasted in one go.
 
-A **server-side** mod for **Fabric** and **NeoForge**, built from one codebase.
+The repository has two parts:
 
-## About this fork
+- **[A real-building toolchain](tools/building/README.md)**, in Python. It describes a
+  building as data (plans in centimetres, materials, rooms), compiles it deterministically
+  into a build file, pastes that into a fresh, real game world, reads it back cell by
+  cell and photographs it. Nothing is placed by hand, so the same inputs always produce the
+  same blocks.
+- **The BuildPaste mod**, a server-side mod for **Fabric** and **NeoForge** that pastes
+  build files and [buildpaste.net](https://buildpaste.net) builds into a world, uploads
+  selections, and undoes pastes. The toolchain uses it for every paste; you can also use it
+  on its own.
 
-This is a fork of [BuildPaste](https://legacy.curseforge.com/minecraft/bukkit-plugins/buildpaste),
-a Bukkit server plugin by **MistrX**.
+## Real buildings
 
-The reason is simple: the original only exists as a Bukkit/Spigot plugin, and I don't run
-Bukkit. My server and my client are NeoForge, so the plugin could not be installed on
-either — a Bukkit plugin and a mod share no code at all, so carrying it across meant
-rewriting it against the mod loaders' APIs. What it does, how its commands read, and the
-buildpaste.net protocol it speaks are unchanged: builds uploaded by the original plugin
-paste correctly here, and builds uploaded here work anywhere else BuildPaste runs.
+```
+research -> building.yaml -> compile -> build.json -> review in the game -> approve -> /pastefile or upload
+```
 
-The name says what the fork adds, because that is the whole point of it: **Fabric**,
-**NeoForge**, and **Server** — it runs on a server without its players needing to install
-anything.
+The toolchain's [README](tools/building/README.md) covers the model format, the rules for
+fitting real dimensions to whole blocks, reading PDF plans, the in-game review, walkthrough
+worlds, height checks and lossless uploads of big builds. Two step-by-step workflows sit
+on top of it:
 
-It is dedicated to my son, who would rather spend an afternoon building a castle than
-fighting anything that lives in one :)
+- [real-building](.github/skills/real-building/SKILL.md): from a building's name (or private
+  plans) to an approved build: research, model, compile, review, publish.
+- [deploy-build-to-server](.github/skills/deploy-build-to-server/SKILL.md): pasting an
+  approved build into an existing server world, including raising the world height for
+  tall buildings and rehearsing on a copy first.
 
-## Usage
+Varso Tower in Warsaw, for example, is 94 × 311 × 68 blocks: 53 storeys, the glazed
+facade, cores, stairs and the 310 m spire. It pastes as about two million blocks from a
+local file, or as two lossless sections from buildpaste.net.
+
+Plans of private homes stay private: projects live in `buildings/`, which git ignores.
+
+## Mod commands
 
 Select a region, look at the front of your build, and upload it:
 
@@ -79,8 +91,9 @@ Operator settings:
 Operators may do everything by default. Anyone else needs a grant, and grants last until
 the server restarts.
 
-Local build files, for operators only. They live in `buildpaste/builds/` in the server
-folder and use the same JSON as buildpaste.net, so nothing leaves the machine:
+Local build files, for operators only, from mod 2.3.1. They live in `buildpaste/builds/`
+in the server (or game) folder, not in the world, and use the same JSON as buildpaste.net,
+so nothing leaves the machine:
 
 ```
 /pastefile <name>                paste buildpaste/builds/<name>.json, facing your way
@@ -88,8 +101,9 @@ folder and use the same JSON as buildpaste.net, so nothing leaves the machine:
 /exportfile <name>               write the selected region to buildpaste/builds/<name>.json
 ```
 
-`/undopaste` works for file pastes too. To turn a real building into a build file, see
-[tools/building](tools/building/README.md).
+`/undopaste` works for file pastes too. A paste starts at your feet, so check that a tall
+build fits under the world's top first (`python -m building fit`, see
+[tools/building](tools/building/README.md)).
 
 ## Installing
 
@@ -145,11 +159,20 @@ Support for a newer Minecraft release is one `match(...)` line in
 [stonecutter.properties.toml](stonecutter.properties.toml). 26.2 needed no source changes
 at all — the mod uses only APIs that were stable across the drop.
 
-## What changed from the plugin
+## Origins and changes from the plugin
 
-The fork is a rewrite against a different platform — Bukkit and the mod loaders share no
-API — but it keeps the commands, the chat, and the wire protocol as they were. Along the
-way it fixes a handful of defects in the original:
+The mod started as a fork of
+[BuildPaste](https://legacy.curseforge.com/minecraft/bukkit-plugins/buildpaste), a Bukkit
+server plugin by **MistrX**. The plugin could not run on NeoForge or Fabric, so it was
+rewritten against the mod loaders' APIs. Its commands, chat and buildpaste.net protocol are
+unchanged: builds uploaded by the original plugin paste correctly here, and builds uploaded
+here work anywhere else BuildPaste runs. The name says what the fork added: **Fabric**,
+**NeoForge**, and **Server**, so players need nothing installed.
+
+It is dedicated to my son, who would rather spend an afternoon building a castle than
+fighting anything that lives in one :)
+
+Defects fixed from the original along the way:
 
 - **Requests no longer block the server.** Every backend call the plugin made ran
   synchronously inside the command handler, freezing the server for the length of the
@@ -213,13 +236,14 @@ and a second server dies on the world lock or the port.
 
 The Fabric client gametest pastes a build into a fresh world, reads it back and takes
 screenshots. `tools/building` drives it (`python -m building review`); see its README.
+The toolchain's tests run with `python -m pytest -q` in `tools/building`.
 
 ## Credits and licences
 
 The original BuildPaste plugin and the buildpaste.net service are by **MistrX** — thank
 you. This fork is not affiliated with or endorsed by them.
 
-The mod's own code is licensed under the [MIT licence](LICENSE).
+The code, both the mod and the toolchain, is licensed under the [MIT licence](LICENSE).
 
 The icon is **not** covered by that licence. It is
 ["Minecraft Windows 11 Folder ICO PNG" by SimplexDesignss](https://www.deviantart.com/simplexdesignss/art/Minecraft-Windows-11-Folder-ICO-PNG-950630441),
