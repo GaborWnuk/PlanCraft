@@ -1,0 +1,77 @@
+building: Varso Tower, Warsaw, Poland
+researched: 2026-10-18
+scope: Main tower and its west urban room, not the neighbouring Varso 1 and Varso 2.
+sources:
+  - id: architect
+    url: https://www.fosterandpartners.com/projects/varso-tower
+    author: Foster + Partners
+    rights: All rights reserved. Drawings and photographs are local research references only; do not redistribute.
+    used_for:
+      - Public drawings 1-17: ground, typical, transfer, terrace plans, elevations and sections.
+      - Drawing 4 is the sixth-floor typical plan; its 10 m scale bar spans about 177 image pixels.
+      - Drawing 6 shows the 34th-floor terrace; drawing 8 shows the 44th-floor reduced plate.
+      - Drawings 11-13 show the garden and L-shaped 53rd-floor viewing terrace.
+      - Photographs show silver fins, blue-grey glazing, mast rings and landscaped lobby.
+      - Two panoramic lifts, double-deck office lifts, 70000 square metres of offices.
+      - Sixteen trees in the level-49 garden and three-metre clear office ceilings.
+  - id: developer
+    url: https://varso.com/en/leasing/varso-tower
+    author: HB Reavis
+    rights: All rights reserved; facts used, no source assets included in build.
+    used_for:
+      - Main lobby 14 m high.
+      - Private terrace 177 m high.
+      - Window units 2.7 x 4 m.
+      - Restaurants on levels 46-48 (leasing specification).
+  - id: developer-complex
+    url: https://hbreavis.com/en/project/varso-place/
+    author: HB Reavis
+    rights: All rights reserved; factual reference only.
+    used_for: Urban room, landscaped terraces and context of the three-building complex.
+  - id: height-register
+    url: https://www.skyscrapercenter.com/building/varso-tower/22631
+    author: Council on Tall Buildings and Urban Habitat / Council on Vertical Urbanism
+    rights: All rights reserved; factual reference only.
+    used_for: Architectural height 310 m, highest occupied/observatory 230 m, 53 above-ground floors.
+  - id: completion
+    url: https://www.dezeen.com/2022/10/26/foster-partners-varso-tower-european-union-tallest-building-poland-architecture/
+    author: Dezeen; photographs credited to Aaron Hargreaves
+    rights: All rights reserved; factual reference only.
+    used_for: Three stepped volumes, 80 m spire, 14 m lobby, 10 m ceramic artwork.
+  - id: observation-operator
+    url: https://highlinewarsaw.com/en/
+    author: Highline Warsaw
+    rights: All rights reserved; factual reference only.
+    used_for: Current public observation venue; viewing and garden use, not an office-only rooftop.
+measurements:
+  confirmed_metres:
+    architectural_tip: 310
+    highest_viewing_floor: 230
+    spire_above_viewing_floor: 80
+    lobby_clear_height: 14
+    private_terrace: 177
+    office_clear_height_minimum: 3
+  plan_scaled_metres:
+    footprint_bounding_box: [55, 45]
+    urban_room_extension_west: 18
+    garden_level: 205
+    north_setback: 8
+    upper_west_and_south_rim_width: 8
+  method: >
+    Trace the public typical-floor raster plan relative to (680,84), using
+    approximately 17.7 pixels per metre. Round footprint vertices to the one-metre
+    Minecraft grid. Cross-check the 177/205/230 m stepped silhouette against
+    elevations, sections and completed-building photos.
+assumptions_and_limits:
+  - Footprint and garden height are scale-derived, not certified construction dimensions.
+  - Local drawing axes align with the Minecraft grid; survey north is not reproduced.
+  - Absolute 177/205/230/310 m heights take precedence over per-storey ceil growth.
+  - Uniform nearest-boundary quantisation keeps height at 310 m; no accumulated storey stretching.
+  - Individual floor heights interpolate between lobby, private terrace, garden and viewing floor.
+  - Level 2 is a partial mezzanine; lobby and urban room otherwise retain 14 m headroom.
+  - Tenant fit-outs are representative offices, not copies of unavailable private tenant drawings.
+  - A compact continuous service stair replaces real lift travel and detailed fire-stair geometry.
+  - Panoramic lift shafts are represented architecturally; they are not working lift machinery.
+  - Plant screens, mast bracing and rings are simplified to the available one-metre grid.
+  - Ceramic art is represented by an original abstract blue and terracotta pattern, not copied artwork.
+  - Basement parking and the neighbouring Varso 1/2 buildings are omitted.

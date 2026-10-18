@@ -25,8 +25,20 @@ bin/
 .DS_Store
 Thumbs.db
 
-# Building projects are local work (often private plans); add a shareable one with git add -f
-buildings/
+# Keep projects private by default; only the reviewed Varso example is published.
+/buildings/*
+!/buildings/README.md
+!/buildings/varso-tower/
+/buildings/varso-tower/*
+!/buildings/varso-tower/README.md
+!/buildings/varso-tower/building.yaml
+!/buildings/varso-tower/palette.yaml
+!/buildings/varso-tower/sources.yaml
+!/buildings/varso-tower/generate.py
+!/buildings/varso-tower/trace.py
+!/buildings/varso-tower/out/
+/buildings/varso-tower/out/*
+!/buildings/varso-tower/out/build.json
 
 # Python
 __pycache__/

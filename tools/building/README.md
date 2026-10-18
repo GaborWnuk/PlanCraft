@@ -45,9 +45,14 @@ README). It runs the Fabric client gametest, which opens a real 26.1.2 client.
 
 ## A project
 
-Projects live in `buildings/<slug>/` at the repository root. That folder is ignored by git
-because plans of real homes are often private; add a project you want to share with
-`git add -f`.
+Projects live in `buildings/<slug>/` at the repository root. The shared
+[Varso Tower project](../../buildings/varso-tower/README.md) includes its model, generator
+and a ready-to-paste build file. See [using included buildings](../../buildings/README.md)
+to paste it in singleplayer or on a server without compiling.
+
+Other projects are ignored by git because plans of real homes are often private.
+Publishing another project requires a deliberate, reviewed allowlist change; never force-add
+private plans, research images or their derived builds.
 
 ```sh
 python -m building new "Warsaw Tower"               # buildings/warsaw-tower/ with templates

@@ -52,7 +52,13 @@ Real photo: [Anty000, Wikimedia Commons](https://commons.wikimedia.org/wiki/File
 resized thumbnail; no further edits). Minecraft screenshot: actual in-game review, cropped
 to remove excess sky; the complete building is preserved. The views show different sides.
 
-Plans of private homes stay private: projects live in `buildings/`, which git ignores.
+**[Download and paste the included Varso Tower](buildings/README.md)** into your own
+singleplayer world or server. The shared project includes the editable model, generator
+and complete build JSON; no Copilot session, compilation or website upload is needed to
+paste the supplied file. Check its height instructions first.
+
+Plans of private homes stay private: only the public Varso example is allowlisted in
+`buildings/`; other projects remain gitignored.
 
 ### Use with GitHub Copilot
 
