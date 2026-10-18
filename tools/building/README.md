@@ -143,6 +143,10 @@ four three-quarter views, a plan view and every room. Results land in
 * `shots/`: the screenshots;
 * `gradle.log`: the full game log.
 
+Render distance is chosen from the camera positions and build bounds (at least 10 chunks).
+Tall buildings need more distant cameras; views requiring more than 32 chunks are rejected
+instead of silently photographing unloaded parts of the build.
+
 A build is ready only when the diff is empty, `compile` has no warnings that matter,
 and the screenshots match the photos and visualisations.
 

@@ -66,6 +66,20 @@ def gradlew() -> list[str]:
     return [str(script)]
 
 
+def render_distance(size: tuple[int, int, int], shots: list[dict]) -> int:
+    """Keep the whole build loaded, including when a tall building needs a distant camera."""
+    sx, _, sz = size
+    reach = max(
+        (max(abs(s["pos"][0]), abs(s["pos"][0] - sx),
+             abs(s["pos"][2]), abs(s["pos"][2] - sz)) for s in shots),
+        default=0,
+    )
+    chunks = max(10, math.ceil(reach / 16) + 1)
+    if chunks > 32:
+        raise ValueError(f"review cameras need {chunks} chunks of render distance; move them closer (maximum 32)")
+    return chunks
+
+
 def run(
     build_file: Path,
     name: str,
@@ -93,6 +107,7 @@ def run(
         "time": time_of_day,
         "width": width,
         "height": height,
+        "renderDistance": render_distance(expected.shape, shots),
         "shots": shots,
         "walkthrough": walkthrough,
     }
