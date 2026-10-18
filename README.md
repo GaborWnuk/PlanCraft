@@ -37,6 +37,15 @@ Varso Tower in Warsaw, for example, is 94 × 311 × 68 blocks: 53 storeys, the g
 facade, cores, stairs and the 310 m spire. It pastes as about two million blocks from a
 local file, or as two lossless sections from buildpaste.net.
 
+| Varso Tower, Warsaw | Built with this tool |
+| :---: | :---: |
+| <img src="docs/images/varso-tower-real.jpg" alt="Real Varso Tower in Warsaw, photographed in May 2022" width="360"> | <img src="docs/images/varso-tower-minecraft.png" alt="The complete Varso Tower recreation, including its spire, pasted into a real Minecraft review world" width="360"> |
+
+Real photo: [Anty000, Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Varso_Tower_Warsaw_22(cropped).jpg),
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (Commons' cropped version,
+resized thumbnail; no further edits). Minecraft screenshot: actual in-game review, cropped
+to remove excess sky; the complete building is preserved. The views show different sides.
+
 Plans of private homes stay private: projects live in `buildings/`, which git ignores.
 
 ## Mod commands
