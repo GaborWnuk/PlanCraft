@@ -29,6 +29,9 @@ object BuildPasteApi {
 	/** The site itself, used for the links sent to players in chat. */
 	const val SITE_ROOT = "https://buildpaste.net"
 
+	// The upload endpoint answers 201 Created, so every 2xx counts as success.
+	private val SUCCESS = 200..299
+
 	private val client: HttpClient = HttpClient.newBuilder()
 		.connectTimeout(Duration.ofSeconds(10))
 		.followRedirects(HttpClient.Redirect.NORMAL)
@@ -60,7 +63,7 @@ object BuildPasteApi {
 			when {
 				error != null -> failure(error)
 				response.statusCode() == 404 -> ApiResult.NotFound
-				response.statusCode() != 200 -> ApiResult.Failed("HTTP ${response.statusCode()}")
+				response.statusCode() !in SUCCESS -> ApiResult.Failed("HTTP ${response.statusCode()}")
 				else -> runCatching { ApiResult.Success(BuildJson.parse(response.body())) }
 					.getOrElse { ApiResult.Failed("malformed build data: ${it.message}") }
 			}
@@ -99,14 +102,28 @@ object BuildPasteApi {
 			.handle { response, error ->
 				when {
 					error != null -> failure(error)
-					response.statusCode() != 200 -> ApiResult.Failed("HTTP ${response.statusCode()}")
+					response.statusCode() !in SUCCESS -> ApiResult.Failed("HTTP ${response.statusCode()}")
 					else -> {
-						val id = response.body().trim().removeSurrounding("\"")
+						val id = uploadedId(response.body())
 						if (id.isEmpty() || id == "-") ApiResult.Failed("backend rejected the upload")
 						else ApiResult.Success(id)
 					}
 				}
 			}
+	}
+
+	/** The build id from an upload response: a bare or quoted string, or an object with an id. */
+	internal fun uploadedId(body: String): String {
+		val text = body.trim()
+		if (text.startsWith("{")) {
+			val json = runCatching { JsonParser.parseString(text).asJsonObject }.getOrNull() ?: return ""
+			for (key in listOf("id", "buildId", "build_id", "build")) {
+				val value = json.get(key)
+				if (value != null && value.isJsonPrimitive) return value.asString.trim()
+			}
+			return ""
+		}
+		return text.removeSurrounding("\"")
 	}
 
 	/** The display name of a build, used to label paste paper. */
@@ -115,7 +132,7 @@ object BuildPasteApi {
 			when {
 				error != null -> failure(error)
 				response.statusCode() == 404 -> ApiResult.NotFound
-				response.statusCode() != 200 -> ApiResult.Failed("HTTP ${response.statusCode()}")
+				response.statusCode() !in SUCCESS -> ApiResult.Failed("HTTP ${response.statusCode()}")
 				else -> runCatching {
 					ApiResult.Success(JsonParser.parseString(response.body()).asJsonObject.get("name").asString)
 				}.getOrElse { ApiResult.Failed("malformed response") }
@@ -132,7 +149,7 @@ object BuildPasteApi {
 		return get(url).handle { response, error ->
 			when {
 				error != null -> failure(error)
-				response.statusCode() == 200 -> ApiResult.Success(Unit)
+				response.statusCode() in SUCCESS -> ApiResult.Success(Unit)
 				response.statusCode() == 404 -> ApiResult.NotFound
 				else -> ApiResult.Failed("HTTP ${response.statusCode()}")
 			}
@@ -145,7 +162,7 @@ object BuildPasteApi {
 			when {
 				error != null -> failure(error)
 				response.statusCode() == 404 -> ApiResult.NotFound
-				response.statusCode() == 200 -> ApiResult.Success(Unit)
+				response.statusCode() in SUCCESS -> ApiResult.Success(Unit)
 				else -> ApiResult.Failed("HTTP ${response.statusCode()}")
 			}
 		}
@@ -174,7 +191,7 @@ object BuildPasteApi {
 			when {
 				error != null -> failure(error)
 				response.statusCode() == 404 -> ApiResult.NotFound
-				response.statusCode() != 200 -> ApiResult.Failed("HTTP ${response.statusCode()}")
+				response.statusCode() !in SUCCESS -> ApiResult.Failed("HTTP ${response.statusCode()}")
 				else -> {
 					val id = response.body().trim().removeSurrounding("\"")
 					if (id.isEmpty()) ApiResult.Failed("no build selected") else ApiResult.Success(id)
